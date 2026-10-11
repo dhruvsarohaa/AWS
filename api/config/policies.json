@@ -1,0 +1,12 @@
+{
+  "schemaVersion": 1,
+  "records": [],
+  "sources": [
+    { "name": "CAQM orders and advisories", "url": "https://caqm.nic.in/" },
+    {
+      "name": "Delhi Directorate of Education",
+      "url": "https://www.edudel.nic.in/"
+    }
+  ],
+  "note": "No order is encoded until its complete text, jurisdiction, effective period and revocation status have been reviewed."
+}

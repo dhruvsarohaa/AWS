@@ -1,0 +1,74 @@
+:root {
+  --canvas: #f7f8f3;
+  --paper: #ffffff;
+  --ink: #24382b;
+  --forest: #274d37;
+  --muted: #526354;
+  --danger: #913b26;
+  --warning-ink: #764409;
+  --warning-paper: #fff4df;
+  --line: #d3ddcc;
+  --sans: 'Segoe UI', 'Nirmala UI', system-ui, sans-serif;
+  --display: 'Segoe UI', 'Nirmala UI', system-ui, sans-serif;
+
+  color: var(--ink);
+  background: var(--canvas);
+  font-family: var(--sans);
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  font-optical-sizing: auto;
+  font-size: 16px;
+  line-height: 1.5;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+[hidden] {
+  display: none !important;
+}
+
+html {
+  min-width: 320px;
+  min-height: 100%;
+  scroll-behavior: smooth;
+}
+
+body {
+  min-width: 320px;
+  min-height: 100vh;
+  margin: 0;
+}
+
+button {
+  font-family: inherit;
+}
+
+a {
+  color: var(--forest);
+  text-underline-offset: 3px;
+  overflow-wrap: anywhere;
+}
+button,
+input,
+select,
+summary,
+a {
+  touch-action: manipulation;
+}
+:focus-visible,
+[tabindex='-1']:focus-visible {
+  outline: 3px solid #315b98;
+  outline-offset: 3px;
+}
+.decision-card :focus-visible {
+  outline-color: white;
+}
+
+::selection {
+  color: #fff;
+  background: #55775a;
+}

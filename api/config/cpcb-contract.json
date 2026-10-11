@@ -1,0 +1,13 @@
+{
+  "verified": false,
+  "quantity": "unknown",
+  "unit": null,
+  "statistic": "unknown",
+  "periodSeconds": null,
+  "timestampField": "last_update",
+  "timestampMeaning": "unknown",
+  "sourceDocument": null,
+  "reviewedBy": null,
+  "reviewedAt": null,
+  "archiveAllowed": false
+}

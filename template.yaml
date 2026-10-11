@@ -1,0 +1,737 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Airday bounded evidence ingestion, planning API and institutional workspaces
+Parameters:
+  ReleaseScope:
+    Type: String
+    Default: R0R2
+    AllowedValues: [R0R2, Full]
+    Description: R0-R2 planner by default; Full is reserved for separately verified future releases
+  RestoredEvidenceTable:
+    Type: String
+    Default: ''
+    AllowedPattern: '^$|^[a-zA-Z0-9_.-]{3,255}$'
+    Description: Optional restored table in this region/account, with the same keys and Timeline index
+  SiteOrigin:
+    Type: String
+    AllowedPattern: 'https://[a-zA-Z0-9.-]+'
+  AlertEmail:
+    Type: String
+    Default: ''
+    AllowedPattern: '^$|^[^\s@]+@[^\s@]+\.[^\s@]+$'
+  NotificationSender:
+    Type: String
+    Default: ''
+    AllowedPattern: '^$|^[^\s@]+@[^\s@]+\.[^\s@]+$'
+  MaxActiveAreas:
+    Type: Number
+    Default: 20
+    MinValue: 1
+    MaxValue: 20
+  MaxActiveStations:
+    Type: Number
+    Default: 40
+    MinValue: 20
+    MaxValue: 40
+  IngestionEnabled:
+    Type: String
+    Default: 'true'
+    AllowedValues: ['true', 'false']
+  ArchiveOpenAq:
+    Type: String
+    Default: 'false'
+    AllowedValues: ['true', 'false']
+  ReviewEmailEnabled:
+    Type: String
+    Default: 'false'
+    AllowedValues: ['true', 'false']
+  SharedWorkspacesEnabled:
+    Type: String
+    Default: 'false'
+    AllowedValues: ['true', 'false']
+    Description: Optional R3 staff accounts; keep disabled for the R0-R2 local-planning release
+  PublicEvidenceEnabled:
+    Type: String
+    Default: 'false'
+    AllowedValues: ['true', 'false']
+  PublicRedistributionReviewed:
+    Type: String
+    Default: 'false'
+    AllowedValues: ['true', 'false']
+  PublicEmbedOrigins:
+    Type: String
+    Default: ''
+    AllowedPattern: '^$|^https://[a-zA-Z0-9.-]+(?::[0-9]+)?(?:,https://[a-zA-Z0-9.-]+(?::[0-9]+)?)*$'
+  WeatherEnabled:
+    Type: String
+    Default: 'false'
+    AllowedValues: ['true', 'false']
+  FiresEnabled:
+    Type: String
+    Default: 'false'
+    AllowedValues: ['true', 'false']
+  FirmsProductVerified:
+    Type: String
+    Default: 'false'
+    AllowedValues: ['true', 'false']
+  FirmsProduct:
+    Type: String
+    Default: 'VIIRS_NOAA20_NRT'
+    AllowedValues: ['VIIRS_NOAA20_NRT', 'VIIRS_NOAA21_NRT']
+Conditions:
+  UseRestoredTable: !Not [!Equals [!Ref RestoredEvidenceTable, '']]
+  CreateEvidenceTable: !Equals [!Ref RestoredEvidenceTable, '']
+  HasAlertEmail: !Not [!Equals [!Ref AlertEmail, '']]
+  HasSender: !Not [!Equals [!Ref NotificationSender, '']]
+  SharedWorkspaces: !And
+    - !Equals [!Ref ReleaseScope, Full]
+    - !Equals [!Ref SharedWorkspacesEnabled, 'true']
+  EmailDelivery: !And
+    - !Condition SharedWorkspaces
+    - !Equals [!Ref ReviewEmailEnabled, 'true']
+    - !Condition HasSender
+Rules:
+  SharedWorkspaceReleasePrerequisite:
+    RuleCondition: !Equals [!Ref SharedWorkspacesEnabled, 'true']
+    Assertions:
+      - Assert: !Equals [!Ref ReleaseScope, Full]
+        AssertDescription: Staff workspaces require the separately verified Full release scope.
+  ReviewEmailPrerequisites:
+    RuleCondition: !Equals [!Ref ReviewEmailEnabled, 'true']
+    Assertions:
+      - Assert: !Equals [!Ref SharedWorkspacesEnabled, 'true']
+        AssertDescription: Scheduled email requires explicitly enabled staff workspaces.
+      - Assert: !Not [!Equals [!Ref NotificationSender, '']]
+        AssertDescription: Scheduled email requires a verified SES sender address.
+Globals:
+  Function:
+    Runtime: nodejs22.x
+    CodeUri: .airday-build/api/
+    MemorySize: 256
+    Timeout: 25
+    Environment:
+      Variables:
+        EVIDENCE_TABLE:
+          !If [UseRestoredTable, !Ref RestoredEvidenceTable, !Ref EvidenceTable]
+        ALLOWED_ORIGIN: !Ref SiteOrigin
+        RELEASE_SCOPE: !Ref ReleaseScope
+        INGESTION_ENABLED: !Ref IngestionEnabled
+        MAX_ACTIVE_AREAS: !Ref MaxActiveAreas
+        AIRDAY_MAX_ACTIVE_STATIONS: !Ref MaxActiveStations
+        REVIEW_EMAIL_ENABLED: !Ref ReviewEmailEnabled
+        SHARED_WORKSPACES_ENABLED: !Ref SharedWorkspacesEnabled
+        PUBLIC_EVIDENCE_ENABLED: !Ref PublicEvidenceEnabled
+        PUBLIC_REDISTRIBUTION_REVIEWED: !Ref PublicRedistributionReviewed
+        PUBLIC_EMBED_ORIGINS: !Ref PublicEmbedOrigins
+        WEATHER_ENABLED: !Ref WeatherEnabled
+        FIRES_ENABLED: !Ref FiresEnabled
+        FIRMS_PRODUCT_VERIFIED: !Ref FirmsProductVerified
+        FIRMS_PRODUCT: !Ref FirmsProduct
+Resources:
+  EvidenceTable:
+    Type: AWS::DynamoDB::Table
+    Condition: CreateEvidenceTable
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - { AttributeName: pk, AttributeType: S }
+        - { AttributeName: sk, AttributeType: S }
+        - { AttributeName: timelinePk, AttributeType: S }
+        - { AttributeName: timelineSk, AttributeType: S }
+      KeySchema:
+        - { AttributeName: pk, KeyType: HASH }
+        - { AttributeName: sk, KeyType: RANGE }
+      GlobalSecondaryIndexes:
+        - IndexName: Timeline
+          KeySchema:
+            - { AttributeName: timelinePk, KeyType: HASH }
+            - { AttributeName: timelineSk, KeyType: RANGE }
+          Projection: { ProjectionType: ALL }
+      SSESpecification: { SSEEnabled: true }
+      PointInTimeRecoverySpecification: { PointInTimeRecoveryEnabled: true }
+      TimeToLiveSpecification: { AttributeName: expireAt, Enabled: true }
+  ArchiveBucket:
+    Type: AWS::S3::Bucket
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault: { SSEAlgorithm: AES256 }
+      VersioningConfiguration: { Status: Enabled }
+      LifecycleConfiguration:
+        Rules:
+          - Id: ArchiveRetention
+            Status: Enabled
+            ExpirationInDays: 90
+            NoncurrentVersionExpiration: { NoncurrentDays: 7 }
+            AbortIncompleteMultipartUpload: { DaysAfterInitiation: 1 }
+  ArchivePolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref ArchiveBucket
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Deny
+            Principal: '*'
+            Action: 's3:*'
+            Resource: [!GetAtt ArchiveBucket.Arn, !Sub '${ArchiveBucket.Arn}/*']
+            Condition: { Bool: { 'aws:SecureTransport': 'false' } }
+  ProviderSecret:
+    Type: AWS::SecretsManager::Secret
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      Description: Provider keys, installed out of band; never CloudFormation parameters
+      SecretString: '{}'
+  RefreshDlq:
+    Type: AWS::SQS::Queue
+    Properties: { SqsManagedSseEnabled: true, MessageRetentionPeriod: 1209600 }
+  RefreshQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      SqsManagedSseEnabled: true
+      VisibilityTimeout: 1080
+      MessageRetentionPeriod: 86400
+      RedrivePolicy:
+        { deadLetterTargetArn: !GetAtt RefreshDlq.Arn, maxReceiveCount: 3 }
+  NotificationDlq:
+    Type: AWS::SQS::Queue
+    Condition: EmailDelivery
+    Properties: { SqsManagedSseEnabled: true, MessageRetentionPeriod: 1209600 }
+  NotificationQueue:
+    Type: AWS::SQS::Queue
+    Condition: EmailDelivery
+    Properties:
+      SqsManagedSseEnabled: true
+      VisibilityTimeout: 180
+      MessageRetentionPeriod: 86400
+      RedrivePolicy:
+        { deadLetterTargetArn: !GetAtt NotificationDlq.Arn, maxReceiveCount: 3 }
+  Api:
+    Type: AWS::Serverless::Api
+    Properties:
+      StageName: prod
+      EndpointConfiguration: REGIONAL
+      OpenApiVersion: '3.0.1'
+      MethodSettings:
+        - ResourcePath: '/*'
+          HttpMethod: '*'
+          ThrottlingRateLimit: 20
+          ThrottlingBurstLimit: 40
+          DataTraceEnabled: false
+          MetricsEnabled: true
+  ReadFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: handler.handler
+      Environment:
+        Variables:
+          REFRESH_QUEUE_URL: !Ref RefreshQueue
+          PROVIDER_SECRET_ARN: !Ref ProviderSecret
+          NOTIFICATION_QUEUE_URL:
+            !If [EmailDelivery, !Ref NotificationQueue, !Ref AWS::NoValue]
+          COGNITO_USER_POOL_ID:
+            !If [SharedWorkspaces, !Ref UserPool, !Ref AWS::NoValue]
+          COGNITO_CLIENT_ID:
+            !If [SharedWorkspaces, !Ref UserClient, !Ref AWS::NoValue]
+          COGNITO_DOMAIN:
+            !If [
+              SharedWorkspaces,
+              !Sub '${UserDomain}.auth.${AWS::Region}.amazoncognito.com',
+              !Ref AWS::NoValue,
+            ]
+          NOTIFICATION_SENDER:
+            !If [EmailDelivery, !Ref NotificationSender, !Ref AWS::NoValue]
+      Policies:
+        - DynamoDBCrudPolicy:
+            {
+              TableName:
+                !If [
+                  UseRestoredTable,
+                  !Ref RestoredEvidenceTable,
+                  !Ref EvidenceTable,
+                ],
+            }
+        - SQSSendMessagePolicy: { QueueName: !GetAtt RefreshQueue.QueueName }
+        - !If
+          - EmailDelivery
+          - SQSSendMessagePolicy:
+              { QueueName: !GetAtt NotificationQueue.QueueName }
+          - !Ref AWS::NoValue
+        - Statement:
+            - Effect: Allow
+              Action: secretsmanager:GetSecretValue
+              Resource: !Ref ProviderSecret
+      Events:
+        Proxy:
+          Type: Api
+          Properties: { RestApiId: !Ref Api, Path: '/{proxy+}', Method: ANY }
+  IngestFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: worker.handler
+      Timeout: 180
+      MemorySize: 512
+      Environment:
+        Variables:
+          PROVIDER_SECRET_ARN: !Ref ProviderSecret
+          ARCHIVE_BUCKET: !Ref ArchiveBucket
+          ARCHIVE_OPENAQ: !Ref ArchiveOpenAq
+      Policies:
+        - DynamoDBCrudPolicy:
+            {
+              TableName:
+                !If [
+                  UseRestoredTable,
+                  !Ref RestoredEvidenceTable,
+                  !Ref EvidenceTable,
+                ],
+            }
+        - Statement:
+            - Effect: Allow
+              Action: secretsmanager:GetSecretValue
+              Resource: !Ref ProviderSecret
+            - Effect: Allow
+              Action: s3:PutObject
+              Resource: !Sub '${ArchiveBucket.Arn}/*'
+      Events:
+        Queue:
+          Type: SQS
+          Properties:
+            Queue: !GetAtt RefreshQueue.Arn
+            BatchSize: 1
+            FunctionResponseTypes: [ReportBatchItemFailures]
+            ScalingConfig: { MaximumConcurrency: 2 }
+  DispatchFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: dispatcher.handler
+      Environment:
+        Variables:
+          REFRESH_QUEUE_URL: !Ref RefreshQueue
+          NOTIFICATION_QUEUE_URL:
+            !If [EmailDelivery, !Ref NotificationQueue, !Ref AWS::NoValue]
+          NOTIFICATION_SENDER:
+            !If [EmailDelivery, !Ref NotificationSender, !Ref AWS::NoValue]
+      Timeout: 60
+      Policies:
+        - DynamoDBCrudPolicy:
+            {
+              TableName:
+                !If [
+                  UseRestoredTable,
+                  !Ref RestoredEvidenceTable,
+                  !Ref EvidenceTable,
+                ],
+            }
+        - SQSSendMessagePolicy: { QueueName: !GetAtt RefreshQueue.QueueName }
+        - !If
+          - EmailDelivery
+          - SQSSendMessagePolicy:
+              { QueueName: !GetAtt NotificationQueue.QueueName }
+          - !Ref AWS::NoValue
+      Events:
+        Tick:
+          Type: ScheduleV2
+          Properties:
+            OmitName: true
+            ScheduleExpression: rate(5 minutes)
+            FlexibleTimeWindow: { Mode: 'OFF' }
+            RetryPolicy:
+              { MaximumRetryAttempts: 2, MaximumEventAgeInSeconds: 300 }
+            DeadLetterConfig: { Arn: !GetAtt RefreshDlq.Arn }
+  NotificationFunction:
+    Type: AWS::Serverless::Function
+    Condition: EmailDelivery
+    Properties:
+      Handler: notifications.handler
+      Timeout: 30
+      Environment:
+        Variables:
+          NOTIFICATION_SENDER: !Ref NotificationSender
+          PROVIDER_SECRET_ARN: !Ref ProviderSecret
+          SES_CONFIGURATION_SET: !Ref EmailConfiguration
+      Policies:
+        - Statement:
+            - Effect: Allow
+              Action: secretsmanager:GetSecretValue
+              Resource: !Ref ProviderSecret
+        - DynamoDBCrudPolicy:
+            {
+              TableName:
+                !If [
+                  UseRestoredTable,
+                  !Ref RestoredEvidenceTable,
+                  !Ref EvidenceTable,
+                ],
+            }
+        - Statement:
+            - Effect: Allow
+              Action: ses:SendEmail
+              Resource:
+                - !Sub 'arn:${AWS::Partition}:ses:${AWS::Region}:${AWS::AccountId}:identity/${NotificationSender}'
+                - !Sub 'arn:${AWS::Partition}:ses:${AWS::Region}:${AWS::AccountId}:configuration-set/${EmailConfiguration}'
+      Events:
+        Queue:
+          Type: SQS
+          Properties:
+            Queue: !GetAtt NotificationQueue.Arn
+            BatchSize: 1
+            FunctionResponseTypes: [ReportBatchItemFailures]
+            ScalingConfig: { MaximumConcurrency: 2 }
+  EmailConfiguration:
+    Type: AWS::SES::ConfigurationSet
+    Condition: EmailDelivery
+    Properties:
+      Name: !Sub '${AWS::StackName}-delivery'
+      ReputationOptions: { ReputationMetricsEnabled: true }
+  EmailEventDestination:
+    Type: AWS::SES::ConfigurationSetEventDestination
+    Condition: EmailDelivery
+    Properties:
+      ConfigurationSetName: !Ref EmailConfiguration
+      EventDestination:
+        Name: delivery-feedback
+        Enabled: true
+        MatchingEventTypes:
+          [DELIVERY, BOUNCE, COMPLAINT, REJECT, RENDERING_FAILURE]
+        EventBridgeDestination:
+          EventBusArn: !Sub 'arn:${AWS::Partition}:events:${AWS::Region}:${AWS::AccountId}:event-bus/default'
+  DeliveryEventsFunction:
+    Type: AWS::Serverless::Function
+    Condition: EmailDelivery
+    Properties:
+      Handler: delivery-events.handler
+      EventInvokeConfig:
+        MaximumEventAgeInSeconds: 3600
+        MaximumRetryAttempts: 2
+        DestinationConfig:
+          OnFailure:
+            Type: SQS
+            Destination: !GetAtt DeliveryFeedbackDlq.Arn
+      Environment:
+        Variables:
+          AWS_ACCOUNT_ID: !Ref AWS::AccountId
+          SES_CONFIGURATION_SET: !Ref EmailConfiguration
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName:
+              !If [
+                UseRestoredTable,
+                !Ref RestoredEvidenceTable,
+                !Ref EvidenceTable,
+              ]
+      Events:
+        Feedback:
+          Type: EventBridgeRule
+          Properties:
+            Pattern:
+              source: [aws.ses]
+              detail-type:
+                [
+                  Email Delivered,
+                  Email Bounced,
+                  Email Complaint Received,
+                  Email Rejected,
+                  Email Rendering Failed,
+                ]
+              detail:
+                mail:
+                  tags:
+                    'ses:configuration-set': [!Ref EmailConfiguration]
+            RetryPolicy:
+              { MaximumRetryAttempts: 2, MaximumEventAgeInSeconds: 3600 }
+            DeadLetterConfig: { Arn: !GetAtt DeliveryFeedbackDlq.Arn }
+  DeliveryFeedbackDlq:
+    Type: AWS::SQS::Queue
+    Condition: EmailDelivery
+    Properties:
+      MessageRetentionPeriod: 1209600
+      SqsManagedSseEnabled: true
+  DeliveryFeedbackDlqPolicy:
+    Type: AWS::SQS::QueuePolicy
+    Condition: EmailDelivery
+    Properties:
+      Queues: [!Ref DeliveryFeedbackDlq]
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal: { Service: events.amazonaws.com }
+            Action: sqs:SendMessage
+            Resource: !GetAtt DeliveryFeedbackDlq.Arn
+            Condition:
+              ArnEquals:
+                { 'aws:SourceArn': !GetAtt DeliveryEventsFunctionFeedback.Arn }
+              StringEquals: { 'aws:SourceAccount': !Ref AWS::AccountId }
+  DeliveryEventsLogs:
+    Type: AWS::Logs::LogGroup
+    Condition: EmailDelivery
+    Properties:
+      LogGroupName: !Sub '/aws/lambda/${DeliveryEventsFunction}'
+      RetentionInDays: 7
+  DeliveryFeedbackAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Condition: EmailDelivery
+    Properties:
+      AlarmDescription: SES delivery feedback needs replay to its feedback handler after investigation
+      Namespace: AWS/SQS
+      MetricName: ApproximateNumberOfMessagesVisible
+      Dimensions:
+        [{ Name: QueueName, Value: !GetAtt DeliveryFeedbackDlq.QueueName }]
+      Statistic: Maximum
+      Period: 300
+      EvaluationPeriods: 1
+      Threshold: 0
+      ComparisonOperator: GreaterThanThreshold
+      TreatMissingData: notBreaching
+      AlarmActions: !If [HasAlertEmail, [!Ref AlertTopic], !Ref AWS::NoValue]
+  UserPool:
+    Type: AWS::Cognito::UserPool
+    Condition: SharedWorkspaces
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      AdminCreateUserConfig: { AllowAdminCreateUserOnly: true }
+      UsernameAttributes: [email]
+      AutoVerifiedAttributes: [email]
+      UserPoolTier: LITE
+      MfaConfiguration: OPTIONAL
+      EnabledMfas: [SOFTWARE_TOKEN_MFA]
+      Policies:
+        PasswordPolicy:
+          {
+            MinimumLength: 12,
+            RequireLowercase: true,
+            RequireUppercase: true,
+            RequireNumbers: true,
+            RequireSymbols: true,
+            TemporaryPasswordValidityDays: 3,
+          }
+  UserClient:
+    Type: AWS::Cognito::UserPoolClient
+    Condition: SharedWorkspaces
+    Properties:
+      UserPoolId: !Ref UserPool
+      GenerateSecret: false
+      AllowedOAuthFlowsUserPoolClient: true
+      AllowedOAuthFlows: [code]
+      AllowedOAuthScopes: [openid, email, profile]
+      SupportedIdentityProviders: [COGNITO]
+      CallbackURLs: [!Sub '${SiteOrigin}/', 'http://localhost:5174/']
+      LogoutURLs: [!Sub '${SiteOrigin}/', 'http://localhost:5174/']
+      PreventUserExistenceErrors: ENABLED
+      EnableTokenRevocation: true
+      AccessTokenValidity: 30
+      IdTokenValidity: 30
+      TokenValidityUnits:
+        { AccessToken: minutes, IdToken: minutes, RefreshToken: days }
+  UserDomain:
+    Type: AWS::Cognito::UserPoolDomain
+    Condition: SharedWorkspaces
+    Properties:
+      UserPoolId: !Ref UserPool
+      Domain: !Sub '${AWS::StackName}-${AWS::AccountId}'
+  WebAcl:
+    Type: AWS::WAFv2::WebACL
+    Properties:
+      Scope: REGIONAL
+      DefaultAction: { Allow: {} }
+      VisibilityConfig:
+        {
+          CloudWatchMetricsEnabled: true,
+          SampledRequestsEnabled: false,
+          MetricName: AirdayWaf,
+        }
+      Rules:
+        - Name: RequestBudget
+          Priority: 0
+          Action: { Block: {} }
+          Statement:
+            { RateBasedStatement: { Limit: 1000, AggregateKeyType: IP } }
+          VisibilityConfig:
+            {
+              CloudWatchMetricsEnabled: true,
+              SampledRequestsEnabled: false,
+              MetricName: AirdayRate,
+            }
+        - Name: CommonRules
+          Priority: 1
+          OverrideAction: { None: {} }
+          Statement:
+            {
+              ManagedRuleGroupStatement:
+                {
+                  VendorName: AWS,
+                  Name: AWSManagedRulesCommonRuleSet,
+                  RuleActionOverrides:
+                    [
+                      {
+                        Name: SizeRestrictions_BODY,
+                        ActionToUse: { Count: {} },
+                      },
+                    ],
+                },
+            }
+          VisibilityConfig:
+            {
+              CloudWatchMetricsEnabled: true,
+              SampledRequestsEnabled: false,
+              MetricName: AirdayCommon,
+            }
+  WafAssociation:
+    Type: AWS::WAFv2::WebACLAssociation
+    DependsOn: ApiprodStage
+    Properties:
+      WebACLArn: !GetAtt WebAcl.Arn
+      ResourceArn: !Sub 'arn:${AWS::Partition}:apigateway:${AWS::Region}::/restapis/${Api}/stages/prod'
+  ReadLogs:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      { LogGroupName: !Sub '/aws/lambda/${ReadFunction}', RetentionInDays: 7 }
+  IngestLogs:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub '/aws/lambda/${IngestFunction}'
+      RetentionInDays: 7
+  DispatchLogs:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      {
+        LogGroupName: !Sub '/aws/lambda/${DispatchFunction}',
+        RetentionInDays: 7,
+      }
+  NotificationLogs:
+    Type: AWS::Logs::LogGroup
+    Condition: EmailDelivery
+    Properties:
+      {
+        LogGroupName: !Sub '/aws/lambda/${NotificationFunction}',
+        RetentionInDays: 7,
+      }
+  ProviderFailures:
+    Type: AWS::Logs::MetricFilter
+    Properties:
+      LogGroupName: !Ref IngestLogs
+      FilterPattern: '{ $.event = "provider_refresh_failed" || $.event = "archive_failed" }'
+      MetricTransformations:
+        [
+          {
+            MetricNamespace: Airday,
+            MetricName: ProviderFailures,
+            MetricValue: '1',
+            DefaultValue: 0,
+          },
+        ]
+  AlertTopic:
+    Type: AWS::SNS::Topic
+    Condition: HasAlertEmail
+  AlertSubscription:
+    Type: AWS::SNS::Subscription
+    Condition: HasAlertEmail
+    Properties:
+      { TopicArn: !Ref AlertTopic, Protocol: email, Endpoint: !Ref AlertEmail }
+  IngestAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmDescription: Provider or archive failures need investigation; cached evidence remains visible
+      Namespace: Airday
+      MetricName: ProviderFailures
+      Statistic: Sum
+      Period: 300
+      EvaluationPeriods: 1
+      Threshold: 3
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      TreatMissingData: notBreaching
+      AlarmActions: !If [HasAlertEmail, [!Ref AlertTopic], !Ref AWS::NoValue]
+  QueueAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      Namespace: AWS/SQS
+      MetricName: ApproximateAgeOfOldestMessage
+      Dimensions: [{ Name: QueueName, Value: !GetAtt RefreshQueue.QueueName }]
+      Statistic: Maximum
+      Period: 300
+      EvaluationPeriods: 2
+      Threshold: 900
+      ComparisonOperator: GreaterThanThreshold
+      TreatMissingData: notBreaching
+      AlarmActions: !If [HasAlertEmail, [!Ref AlertTopic], !Ref AWS::NoValue]
+  DlqAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      Namespace: AWS/SQS
+      MetricName: ApproximateNumberOfMessagesVisible
+      Dimensions: [{ Name: QueueName, Value: !GetAtt RefreshDlq.QueueName }]
+      Statistic: Maximum
+      Period: 300
+      EvaluationPeriods: 1
+      Threshold: 0
+      ComparisonOperator: GreaterThanThreshold
+      TreatMissingData: notBreaching
+      AlarmActions: !If [HasAlertEmail, [!Ref AlertTopic], !Ref AWS::NoValue]
+  MonthlyBudget:
+    Type: AWS::Budgets::Budget
+    Condition: HasAlertEmail
+    Properties:
+      Budget:
+        BudgetName: !Sub '${AWS::StackName}-account-budget'
+        BudgetType: COST
+        TimeUnit: MONTHLY
+        BudgetLimit: { Amount: 75, Unit: USD }
+      NotificationsWithSubscribers:
+        - Notification:
+            {
+              NotificationType: ACTUAL,
+              ComparisonOperator: GREATER_THAN,
+              ThresholdType: ABSOLUTE_VALUE,
+              Threshold: 20,
+            }
+          Subscribers: [{ SubscriptionType: EMAIL, Address: !Ref AlertEmail }]
+        - Notification:
+            {
+              NotificationType: ACTUAL,
+              ComparisonOperator: GREATER_THAN,
+              ThresholdType: ABSOLUTE_VALUE,
+              Threshold: 50,
+            }
+          Subscribers: [{ SubscriptionType: EMAIL, Address: !Ref AlertEmail }]
+        - Notification:
+            {
+              NotificationType: ACTUAL,
+              ComparisonOperator: GREATER_THAN,
+              ThresholdType: ABSOLUTE_VALUE,
+              Threshold: 75,
+            }
+          Subscribers: [{ SubscriptionType: EMAIL, Address: !Ref AlertEmail }]
+Outputs:
+  AirdayApiUrl:
+    Value: !Sub 'https://${Api}.execute-api.${AWS::Region}.amazonaws.com/prod'
+  ProviderSecretArn: { Value: !Ref ProviderSecret }
+  EvidenceTableName:
+    {
+      Value:
+        !If [UseRestoredTable, !Ref RestoredEvidenceTable, !Ref EvidenceTable],
+    }
+  ArchiveBucketName: { Value: !Ref ArchiveBucket }
+  UserPoolId: { Condition: SharedWorkspaces, Value: !Ref UserPool }
+  ClientId: { Condition: SharedWorkspaces, Value: !Ref UserClient }
+  AuthDomain:
+    {
+      Condition: SharedWorkspaces,
+      Value: !Sub '${UserDomain}.auth.${AWS::Region}.amazoncognito.com',
+    }
+  RefreshQueueUrl: { Value: !Ref RefreshQueue }
+  RefreshDlqUrl: { Value: !Ref RefreshDlq }
+  NotificationDlqUrl: { Condition: EmailDelivery, Value: !Ref NotificationDlq }
+  DeliveryFeedbackDlqUrl:
+    { Condition: EmailDelivery, Value: !Ref DeliveryFeedbackDlq }

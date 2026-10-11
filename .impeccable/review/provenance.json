@@ -1,0 +1,38 @@
+{
+  "date": "2026-10-11",
+  "project": "Airday",
+  "purpose": "Browser verification of the existing interface redesign",
+  "source": "Local production build served by tests/r2-browser-server.mjs",
+  "origin": "http://127.0.0.1:5190",
+  "data": "Explicit synthetic Delhi and activity fixtures in an isolated QA environment; no providers or AWS",
+  "captureTool": "Codex in-app browser through computer-use",
+  "viewports": {
+    "desktop": { "width": 1280, "height": 720 },
+    "mobile": { "width": 390, "height": 844 },
+    "narrow": { "width": 320, "height": 844 }
+  },
+  "artifacts": {
+    "desktop.png": "Full Today view, final production build",
+    "mobile.png": "Full Today view, final language width correction",
+    "user-320.png": "Full narrow Today view, final language width correction",
+    "desktop-plan.png": "Full Plan view; desktop styling unchanged by final mobile-only correction",
+    "desktop-evidence.png": "Full Evidence view; desktop styling unchanged by final mobile-only correction",
+    "desktop-history.png": "Full History view; desktop styling unchanged by final mobile-only correction",
+    "desktop-settings.png": "Full Settings view; desktop styling unchanged by final mobile-only correction",
+    "desktop-dialog.png": "Plan editor viewport; dialog styling unchanged by final mobile-only correction",
+    "mobile-plan.png": "Full Plan view, final language width correction",
+    "mobile-settings.png": "Full Settings view, final language width correction",
+    "mobile-hindi.png": "Full Hindi Today view, final language width correction",
+    "mobile-dialog.png": "Plan editor viewport; dialog styling unchanged by final mobile-only correction",
+    "../../artifacts/premium-desktop.png": "Desktop viewport including synthetic QA controls",
+    "../../artifacts/premium-mobile.png": "Mobile viewport including synthetic QA controls",
+    "../../artifacts/premium-interface.png": "Desktop screenshot clip at x0,y112,width1280,height608; excludes only QA toolbar, retains app header, navigation and content"
+  },
+  "notes": [
+    "Full-page screenshots retain fixed bottom navigation at the original viewport position; this is screenshot behavior.",
+    "Captures verify rendering, not live provider availability or cloud deployment.",
+    "No AI-generated imagery or other shipping raster asset was introduced.",
+    "Impeccable helper engine was unavailable; no engine seed or detector result is claimed.",
+    "Browser viewport overrides and media emulation were reset; temporary QA tab closed and server stopped."
+  ]
+}

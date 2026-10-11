@@ -1,0 +1,44 @@
+.r5-devices {
+  overflow-wrap: anywhere;
+}
+.r5-device {
+  border-top: 1px solid var(--border, #ccd5db);
+  margin-top: 1.5rem;
+  padding-top: 1rem;
+}
+.r5-devices label {
+  display: block;
+  margin: 0.75rem 0;
+}
+.r5-devices input:not([type='checkbox']),
+.r5-devices select {
+  display: block;
+  width: 100%;
+  max-width: 30rem;
+  margin-top: 0.3rem;
+}
+.r5-devices input[type='checkbox'] {
+  margin-right: 0.5rem;
+}
+.r5-devices fieldset {
+  min-width: 0;
+  margin-top: 1rem;
+}
+.r5-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin: 1rem 0;
+}
+.r5-devices table {
+  width: 100%;
+}
+.r5-devices th,
+.r5-devices td {
+  padding: 0.65rem;
+  text-align: left;
+  vertical-align: top;
+}
+.r5-control {
+  padding: 0.75rem 0;
+}

@@ -1,0 +1,49 @@
+{
+  "name": "airday",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "node dev.mjs",
+    "build": "tsc -b && vite build && node scripts/build-pwa.mjs",
+    "lint": "oxlint",
+    "test": "node --test tests/*.test.mjs",
+    "build:api": "node scripts/build-api.mjs",
+    "check:infra": "node scripts/check-infra.mjs",
+    "check:config": "node scripts/operator.mjs validate-config",
+    "preflight": "node scripts/preflight.mjs",
+    "check:security": "node scripts/security-check.mjs",
+    "benchmark:local": "node scripts/benchmark.mjs",
+    "evaluate": "node scripts/evaluate.mjs",
+    "operator": "node scripts/operator.mjs",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@aws-sdk/client-cognito-identity-provider": "^3.1147.0",
+    "@aws-sdk/client-dynamodb": "^3.1147.0",
+    "@aws-sdk/client-s3": "^3.1147.0",
+    "@aws-sdk/client-secrets-manager": "^3.1147.0",
+    "@aws-sdk/client-sesv2": "^3.1147.0",
+    "@aws-sdk/client-sqs": "^3.1147.0",
+    "@aws-sdk/lib-dynamodb": "^3.1147.0",
+    "@gsap/react": "^2.1.2",
+    "aws-jwt-verify": "^5.2.1",
+    "gsap": "^3.15.0",
+    "leaflet": "1.9.4",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8"
+  },
+  "devDependencies": {
+    "@types/leaflet": "^1.9.22",
+    "@types/node": "^24.13.3",
+    "@types/react": "^19.2.18",
+    "@types/react-dom": "^19.2.7",
+    "@vitejs/plugin-react": "^6.1.1",
+    "esbuild": "^0.28.2",
+    "oxlint": "^1.81.0",
+    "prettier": "^3.9.9",
+    "typescript": "~6.0.2",
+    "vite": "^8.3.0",
+    "yaml": "^2.9.1"
+  }
+}

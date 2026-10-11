@@ -1,0 +1,102 @@
+{
+  "schemaVersion": 2,
+  "title": "Design System: Airday — Warm Glass",
+  "generatedAt": "2026-10-11T15:03:47.987Z",
+  "extensions": {
+    "sourceFile": "src/glass.css",
+    "colorMeta": {
+      "canvas": {
+        "canonical": "#fcfaf8",
+        "displayName": "canvas",
+        "role": "neutral"
+      },
+      "sand": {
+        "canonical": "#f6eee2",
+        "displayName": "sand",
+        "role": "neutral"
+      },
+      "ink": {
+        "canonical": "#231f20",
+        "displayName": "ink",
+        "role": "primary"
+      },
+      "muted": {
+        "canonical": "#716860",
+        "displayName": "muted",
+        "role": "neutral"
+      },
+      "line": {
+        "canonical": "#ddd2c5",
+        "displayName": "line",
+        "role": "neutral"
+      },
+      "teal": {
+        "canonical": "#1d7f88",
+        "displayName": "teal",
+        "role": "neutral"
+      },
+      "coral": {
+        "canonical": "#fe6e5d",
+        "displayName": "coral",
+        "role": "neutral"
+      },
+      "sky": {
+        "canonical": "#2f95ea",
+        "displayName": "sky",
+        "role": "neutral"
+      },
+      "leaf": {
+        "canonical": "#99cd60",
+        "displayName": "leaf",
+        "role": "neutral"
+      }
+    }
+  },
+  "components": [
+    {
+      "name": "Primary action",
+      "kind": "button",
+      "description": "Dark pill with immediate press feedback.",
+      "html": "<button class=\"ds-primary\">Find my time ↗</button>",
+      "css": ".ds-primary{font:700 14px/1.4 Manrope,system-ui,sans-serif;border:1px solid #231f20;border-radius:999px;background:#231f20;color:#fcfaf8;padding:12px 22px;min-height:46px;cursor:pointer}.ds-primary:focus-visible{outline:3px solid #1d7f88;outline-offset:3px}.ds-primary:active{transform:scale(.97)}@media(prefers-reduced-motion:reduce){.ds-primary:active{transform:none}}"
+    },
+    {
+      "name": "Frosted working surface",
+      "kind": "card",
+      "description": "Translucent task surface with a solid accessibility fallback.",
+      "html": "<section class=\"ds-glass\"><h2>The air ahead</h2><p>Regional forecast. Source and retrieval time remain visible.</p></section>",
+      "css": ".ds-glass{padding:32px;border:1px solid rgb(255 255 255 / 85%);border-radius:28px;background:rgb(255 255 255 / 48%);backdrop-filter:blur(20px);box-shadow:0 8px 32px rgb(61 47 36 / 7%),inset 0 1px 0 rgb(255 255 255 / 90%);font:400 16px/1.65 Manrope,system-ui,sans-serif;color:#231f20}.ds-glass h2{font-size:20px;margin:0}.ds-glass p{color:#716860}@media(prefers-reduced-transparency:reduce),(prefers-contrast:more){.ds-glass{background:#fcfaf8;backdrop-filter:none;border-color:#ddd2c5}}"
+    }
+  ],
+  "narrative": {
+    "northStar": "A little clarity for your everyday",
+    "overview": "Reference-inspired warmth, expressive typography and glassmorphism applied to an operational outdoor planner.",
+    "rules": [
+      {
+        "name": "Evidence remains factual",
+        "body": "Preserve source, age, uncertainty, errors and recovery actions.",
+        "section": "components"
+      },
+      {
+        "name": "Glass with a fallback",
+        "body": "Use frosted chrome and task surfaces; respect reduced transparency and contrast.",
+        "section": "elevation & depth"
+      },
+      {
+        "name": "Motion stays optional",
+        "body": "The cursor trail is decorative, bounded and disabled for reduced motion or touch pointers.",
+        "section": "components"
+      }
+    ],
+    "dos": [
+      "Use the current DESIGN.md and src/glass.css.",
+      "Keep all existing feature gates, data and handlers.",
+      "Provide direct access to real tools."
+    ],
+    "donts": [
+      "Do not ship reference branding, imagery or source code.",
+      "Do not imply paused integrations are active.",
+      "Do not override accessibility preferences."
+    ]
+  }
+}

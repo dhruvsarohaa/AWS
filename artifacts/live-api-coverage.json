@@ -1,0 +1,272 @@
+[
+  {
+    "now": "2026-10-10T18:31:48.734Z",
+    "city": "New Delhi",
+    "status": 200,
+    "forecastPoints": 72,
+    "sources": {
+      "forecast": {
+        "status": "live",
+        "lastAttemptAt": "2026-10-10T17:59:15.308Z",
+        "lastSuccessAt": "2026-10-10T17:59:15.618Z"
+      },
+      "cpcb": {
+        "status": "not_configured",
+        "message": "CPCB / data.gov.in is not connected on this deployment.",
+        "lastAttemptAt": "2026-10-10T18:28:12.383Z",
+        "lastSuccessAt": null
+      },
+      "openaq": {
+        "status": "live",
+        "message": "Up to five stationary candidates are checked, prioritizing recent catalog reporting and provider reference-monitor metadata. Sensor timestamps determine freshness; siting and averaging periods may be unverified.",
+        "lastAttemptAt": "2026-10-10T18:28:00.715Z",
+        "lastSuccessAt": "2026-10-10T18:28:11.051Z"
+      }
+    },
+    "coverage": {
+      "state": "forecast_and_observation",
+      "returnedStationCount": 15,
+      "nearestDistanceKm": 1.669429055967541,
+      "searchRadiusKm": 25,
+      "catalogAt": 1791656882662,
+      "message": "Counts describe returned usable stations, not complete national coverage or conditions at your building."
+    },
+    "pending": false,
+    "selected": [
+      {
+        "station": "Air Check",
+        "id": "4712609",
+        "sensor": "15289075",
+        "distanceKm": 2.6591692908100644,
+        "value": 80.6,
+        "unit": "µg/m³",
+        "observedAt": "2026-10-10T18:00:00.000Z",
+        "fetchedAt": "2026-10-10T18:28:05.312Z",
+        "statistic": "unknown",
+        "period": null,
+        "stale": false,
+        "referenceMonitor": false,
+        "instruments": ["AirGradient Open Air Generation 1 (O-1PST)"],
+        "siting": "not_verified",
+        "owner": "FamilyFirst",
+        "upstreamProvider": "AirGradient"
+      }
+    ]
+  },
+  {
+    "now": "2026-10-10T18:31:48.850Z",
+    "city": "Noida",
+    "status": 200,
+    "forecastPoints": 72,
+    "sources": {
+      "forecast": {
+        "status": "live",
+        "lastAttemptAt": "2026-10-10T18:14:59.766Z",
+        "lastSuccessAt": "2026-10-10T18:15:00.948Z"
+      },
+      "cpcb": {
+        "status": "not_configured",
+        "message": "CPCB / data.gov.in is not connected on this deployment.",
+        "lastAttemptAt": "2026-10-10T18:30:41.227Z",
+        "lastSuccessAt": null
+      },
+      "openaq": {
+        "status": "live",
+        "message": "Up to five stationary candidates are checked, prioritizing recent catalog reporting and provider reference-monitor metadata. Sensor timestamps determine freshness; siting and averaging periods may be unverified.",
+        "lastAttemptAt": "2026-10-10T18:30:37.468Z",
+        "lastSuccessAt": "2026-10-10T18:30:40.785Z"
+      }
+    },
+    "coverage": {
+      "state": "forecast_and_observation",
+      "returnedStationCount": 15,
+      "nearestDistanceKm": 3.7609060825471414,
+      "searchRadiusKm": 25,
+      "catalogAt": 1791657040129,
+      "message": "Counts describe returned usable stations, not complete national coverage or conditions at your building."
+    },
+    "pending": false,
+    "selected": [
+      {
+        "station": "Sector 1, Noida extension",
+        "id": "6105800",
+        "sensor": "14453757",
+        "distanceKm": 6.654912986352526,
+        "value": 72.9,
+        "unit": "µg/m³",
+        "observedAt": "2026-10-10T18:00:00.000Z",
+        "fetchedAt": "2026-10-10T18:30:40.785Z",
+        "statistic": "unknown",
+        "period": null,
+        "stale": false,
+        "referenceMonitor": false,
+        "instruments": ["Unknown AirGradient Sensor"],
+        "siting": "not_verified",
+        "owner": "Unknown Person",
+        "upstreamProvider": "AirGradient"
+      }
+    ]
+  },
+  {
+    "now": "2026-10-10T18:31:48.992Z",
+    "city": "Gurugram",
+    "status": 200,
+    "forecastPoints": 72,
+    "sources": {
+      "forecast": {
+        "status": "live",
+        "lastAttemptAt": "2026-10-10T18:15:15.793Z",
+        "lastSuccessAt": "2026-10-10T18:15:16.699Z"
+      },
+      "cpcb": {
+        "status": "not_configured",
+        "message": "CPCB / data.gov.in is not connected on this deployment.",
+        "lastAttemptAt": "2026-10-10T18:30:46.075Z",
+        "lastSuccessAt": null
+      },
+      "openaq": {
+        "status": "live",
+        "message": "Up to five stationary candidates are checked, prioritizing recent catalog reporting and provider reference-monitor metadata. Sensor timestamps determine freshness; siting and averaging periods may be unverified.",
+        "lastAttemptAt": "2026-10-10T18:30:41.346Z",
+        "lastSuccessAt": "2026-10-10T18:30:45.158Z"
+      }
+    },
+    "coverage": {
+      "state": "forecast_and_observation",
+      "returnedStationCount": 14,
+      "nearestDistanceKm": 1.0429844032673306,
+      "searchRadiusKm": 25,
+      "catalogAt": 1791657041909,
+      "message": "Counts describe returned usable stations, not complete national coverage or conditions at your building."
+    },
+    "pending": false,
+    "selected": [
+      {
+        "station": "Uptitude Cloud Pvt Ltd - Sector 62, GGN",
+        "id": "6125489",
+        "sensor": "14598776",
+        "distanceKm": 8.524099626170504,
+        "value": 74.2,
+        "unit": "µg/m³",
+        "observedAt": "2026-10-10T18:00:00.000Z",
+        "fetchedAt": "2026-10-10T18:30:42.987Z",
+        "statistic": "unknown",
+        "period": null,
+        "stale": false,
+        "referenceMonitor": false,
+        "instruments": ["AirGradient ONE Generation 9 (I-9PSL-DE)"],
+        "siting": "not_verified",
+        "owner": "Uptitude",
+        "upstreamProvider": "AirGradient"
+      }
+    ]
+  },
+  {
+    "now": "2026-10-10T18:31:49.109Z",
+    "city": "Mumbai",
+    "status": 200,
+    "forecastPoints": 72,
+    "sources": {
+      "forecast": {
+        "status": "live",
+        "lastAttemptAt": "2026-10-10T18:15:32.820Z",
+        "lastSuccessAt": "2026-10-10T18:15:33.725Z"
+      },
+      "cpcb": {
+        "status": "not_configured",
+        "message": "CPCB / data.gov.in is not connected on this deployment.",
+        "lastAttemptAt": "2026-10-10T18:30:56.248Z",
+        "lastSuccessAt": null
+      },
+      "openaq": {
+        "status": "live",
+        "message": "Up to five stationary candidates are checked, prioritizing recent catalog reporting and provider reference-monitor metadata. Sensor timestamps determine freshness; siting and averaging periods may be unverified.",
+        "lastAttemptAt": "2026-10-10T18:30:46.199Z",
+        "lastSuccessAt": "2026-10-10T18:30:54.886Z"
+      }
+    },
+    "coverage": {
+      "state": "forecast_and_observation",
+      "returnedStationCount": 5,
+      "nearestDistanceKm": 0.6248953243537393,
+      "searchRadiusKm": 25,
+      "catalogAt": 1791657047116,
+      "message": "Counts describe returned usable stations, not complete national coverage or conditions at your building."
+    },
+    "pending": false,
+    "selected": [
+      {
+        "station": "Mumbai",
+        "id": "8039",
+        "sensor": "23320",
+        "distanceKm": 0.6248953243537393,
+        "value": 70,
+        "unit": "µg/m³",
+        "observedAt": "2026-10-10T17:30:00.000Z",
+        "fetchedAt": "2026-10-10T18:30:48.151Z",
+        "statistic": "unknown",
+        "period": null,
+        "stale": false,
+        "referenceMonitor": true,
+        "instruments": ["Government Monitor"],
+        "siting": "not_verified",
+        "owner": "Unknown Governmental Organization",
+        "upstreamProvider": "AirNow"
+      }
+    ]
+  },
+  {
+    "now": "2026-10-10T18:51:30.654Z",
+    "city": "Bengaluru",
+    "status": 200,
+    "forecastPoints": 72,
+    "sources": {
+      "forecast": {
+        "status": "live",
+        "lastAttemptAt": "2026-10-10T18:15:35.849Z",
+        "lastSuccessAt": "2026-10-10T18:15:36.192Z"
+      },
+      "cpcb": {
+        "status": "not_configured",
+        "message": "CPCB / data.gov.in is not connected on this deployment.",
+        "lastAttemptAt": "2026-10-10T18:49:12.694Z",
+        "lastSuccessAt": null
+      },
+      "openaq": {
+        "status": "live",
+        "message": "Up to five stationary candidates are checked, prioritizing recent catalog reporting and provider reference-monitor metadata. Sensor timestamps determine freshness; siting and averaging periods may be unverified.",
+        "lastAttemptAt": "2026-10-10T18:49:07.423Z",
+        "lastSuccessAt": "2026-10-10T18:49:12.241Z"
+      }
+    },
+    "coverage": {
+      "state": "forecast_and_old_observation",
+      "returnedStationCount": 5,
+      "nearestDistanceKm": 3.7084165866124112,
+      "searchRadiusKm": 25,
+      "catalogAt": 1791657057133,
+      "message": "Counts describe returned usable stations, not complete national coverage or conditions at your building."
+    },
+    "pending": false,
+    "selected": [
+      {
+        "station": "Hombegowda Nagar, Bengaluru - KSPCB",
+        "id": "6983",
+        "sensor": "12235258",
+        "distanceKm": 3.7084165866124112,
+        "value": 41,
+        "unit": "µg/m³",
+        "observedAt": "2026-10-07T14:30:00.000Z",
+        "fetchedAt": "2026-10-10T18:49:10.041Z",
+        "statistic": "unknown",
+        "period": null,
+        "stale": true,
+        "referenceMonitor": true,
+        "instruments": ["Government Monitor", "Government Monitor"],
+        "siting": "not_verified",
+        "owner": "Karnataka State Pollution Control Board",
+        "upstreamProvider": "CPCB"
+      }
+    ]
+  }
+]

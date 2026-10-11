@@ -1,0 +1,50 @@
+.group-row,
+.proposal-form,
+.notification-settings {
+  padding: 1rem 0;
+  border-top: 1px solid #d5e1dc;
+}
+.proposal-form label,
+.notification-settings label {
+  display: block;
+  margin: 0.75rem 0;
+}
+.group-row .button-row {
+  margin-top: 0.5rem;
+}
+.r3-context {
+  display: grid;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+.table-scroll {
+  max-width: 100%;
+  overflow-x: auto;
+}
+.public-display {
+  max-width: 1150px;
+  margin: auto;
+  padding: clamp(20px, 4vw, 50px);
+  font-size: clamp(18px, 2vw, 24px);
+  line-height: 1.6;
+}
+.public-display table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.public-display th,
+.public-display td {
+  padding: 0.6rem;
+  text-align: left;
+  border-bottom: 1px solid #a4b9b0;
+}
+.public-display article {
+  padding: 1rem 0;
+  border-bottom: 1px solid #c2d1cb;
+}
+.public-display a {
+  color: #174f67;
+}
+.public-display button {
+  font: inherit;
+}

@@ -1,0 +1,37 @@
+[
+  {
+    "view": "Today",
+    "client": 305,
+    "navBottom": 788,
+    "scroll": 305,
+    "viewport": 320
+  },
+  {
+    "view": "Plan",
+    "client": 305,
+    "navBottom": 788,
+    "scroll": 305,
+    "viewport": 320
+  },
+  {
+    "view": "Evidence",
+    "client": 305,
+    "navBottom": 788,
+    "scroll": 305,
+    "viewport": 320
+  },
+  {
+    "view": "History",
+    "client": 305,
+    "navBottom": 788,
+    "scroll": 305,
+    "viewport": 320
+  },
+  {
+    "view": "Settings",
+    "client": 305,
+    "navBottom": 788,
+    "scroll": 305,
+    "viewport": 320
+  }
+]
