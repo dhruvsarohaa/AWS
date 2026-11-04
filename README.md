@@ -1,124 +1,164 @@
-# Airday · India outdoor air planner
+<h1 align="center">Airday</h1>
 
-Airday turns regional pollution evidence into a recorded outdoor activity decision. Schools are the first demo story; families, workers and community groups can use the same planner. Forecasts, observations, personal rules and official guidance remain distinct.
+<p align="center">
+  <b>India outdoor air planner.</b> Turns regional air-pollution evidence into a recorded, reviewable decision about outdoor activities.
+</p>
 
-**Active work, 10 October 2026:** complete the R0 foundations and verify all 16 R1/R2 features locally before AWS deployment. R3 work is paused and R4/R5 are deferred. The current acceptance ledger is [R0_R2_RELEASE_STATUS.md](R0_R2_RELEASE_STATUS.md); historical implementation notes below describe integrated code, not full release acceptance.
+<p align="center">
+  <img alt="React" src="https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=black">
+  <img alt="TypeScript" src="https://img.shields.io/badge/TypeScript-6-3178C6?logo=typescript&logoColor=white">
+  <img alt="Vite" src="https://img.shields.io/badge/Vite-8-646CFF?logo=vite&logoColor=white">
+  <img alt="Node" src="https://img.shields.io/badge/Node-22.18%2B%20%7C%2024-339933?logo=node.js&logoColor=white">
+  <img alt="AWS SAM" src="https://img.shields.io/badge/AWS-SAM%20%7C%20Lambda%20%7C%20DynamoDB-FF9900?logo=amazonaws&logoColor=white">
+</p>
 
-**Implementation status, 8 October 2026:** the local application, ingestion pipeline, optional workspace workflow and AWS deployment stack are implemented. Delhi's no-key API returned 72 real forecast points and the response was archived. Station integration, cloud deployment, Cognito sign-in and SES delivery need real account configuration and deployed verification. This is a bounded pilot implementation; national station coverage, measured forecast accuracy and enterprise availability are not established.
+---
 
-**Feature update, 9 October 2026:** the map's R1 browser implementation is integrated: quick-time finder, dated activity timeline and templates, review inbox, frozen-evidence CSV/print reports, readable source status and English/Hindi planning explanations. IndexedDB now owns transactional local planning data, with migration, version checks, session-only fallback and validated backup import. See [IMPLEMENTATION_R1.md](IMPLEMENTATION_R1.md) for the exact scope and outstanding checks. AWS deployment remains pending.
+## Why
 
-## Run locally
+Schools, families, outdoor workers and community groups in India decide every day whether to hold an activity outside. Airday puts the evidence for that decision in one place, keeps **forecasts, station observations, personal rules and official guidance clearly separate**, and records what was decided and why, so the decision can be reviewed later. Schools are the first demo story.
 
-**Frontend UX update, 9 October 2026:** five task views share place/date/language context, stepped planning, alternative previews and frozen station/decision details. **R2 is integrated:** optional station map, five local saved areas, bounded retained-history API and trends, daily/weekly recaps, model concentration-time estimates, six pollutant views and period comparisons, private feedback and production offline reading. See [IMPLEMENTATION_R2.md](IMPLEMENTATION_R2.md) for exact bounds and [FRONTEND_UX_IMPLEMENTATION.md](FRONTEND_UX_IMPLEMENTATION.md) for the UX ledger. Browser review, live provider verification and AWS deployment remain required; later context/device bundles have separate gates.
+## Features
 
-Use Node 24 (or Node 22.18+) and pnpm.
+**Planning**
+- Search any Indian city or town, or use device location on request (no continuous tracking)
+- Recurring activity editor with your own review threshold, flexibility constraints and an indoor option
+- Same-duration, lower-forecast alternatives within the time range you allow
+- Decisions are frozen together with the evidence shown when you made them; reminders when that evidence changes; follow-through tracking
+- Quick-time finder, dated activity timeline, templates and a review inbox
+- English and Hindi explanations and summaries
+
+**Evidence**
+- PM2.5 / PM10 forecast chart and exact hourly table with units, dates, grid description and attribution
+- Nearby station observations with station, distance, owner, original timestamp, averaging period and quality status
+- Optional station map, saved areas, retained history and trends, daily/weekly recaps, six pollutant views and period comparisons
+- Explicit states for pending, forecast-only, observation-only, stale or missing data, unconfigured providers and paused ingestion. Fixture readings are never substituted for real data
+
+**Teams (optional)**
+- Cognito workspaces with role-based plan edits, proposals and approvals
+- Atomic audit records, optimistic versioning and opt-in approval emails via SES
+
+**Exports**
+- CSV and print reports from frozen evidence, JSON export, validated backup import
+- Offline reading in the production PWA; local planning data in IndexedDB with migrations and a session-only fallback
+
+> Airday compares model values and observations. It does **not** certify that conditions are safe.
+
+## Architecture
+
+```mermaid
+flowchart LR
+    UI[React + Vite PWA<br/>IndexedDB] -->|/api| GW[API Gateway + WAF]
+    GW --> READ[Read Lambda]
+    READ --> DDB[(DynamoDB<br/>evidence, leases, workspaces)]
+    READ -->|enqueue refresh| Q[SQS refresh queue]
+    Q --> ING[Ingest Lambda]
+    ING --> P[Forecast and station providers<br/>Open-Meteo · OpenAQ · data.gov.in]
+    ING --> DDB
+    ING --> S3[(S3 archive)]
+    DISP[Dispatch Lambda] --> NQ[SQS notifications] --> NOTE[Notification Lambda] --> SES[SES email]
+    UI -->|sign in| COG[Cognito]
+    SEC[Secrets Manager] -.provider keys.-> ING
+```
+
+- **Reads never call air providers directly.** Requests within budget queue a refresh; workers fetch, archive and store evidence. A failed refresh keeps the earlier evidence and its original timestamps.
+- **Bounded by design:** 20 active rounded areas and 20 OpenAQ stations by default (40 opt-in), hourly forecast refresh, 15-minute monitor refresh, shared quota caches, retries, cooldowns and dead-letter queues.
+- **Keys stay server-side.** Provider keys live in `.env` locally and in Secrets Manager in AWS, never in `VITE_*` variables.
+
+## Tech stack
+
+| Layer | Tools |
+|---|---|
+| Frontend | React, TypeScript, Vite, GSAP, Leaflet, PWA build script |
+| API | Node.js (ESM) handlers shared by the local server and Lambda |
+| AWS | SAM, API Gateway, Lambda, DynamoDB, SQS, S3, Secrets Manager, Cognito, SES, WAF, CloudWatch, Amplify Hosting |
+| Quality | `node --test`, oxlint, Prettier, security/config/infra check scripts, local benchmark |
+
+## Getting started
+
+Requires **Node 24** (or 22.18+) and **pnpm**.
 
 ```powershell
 pnpm install
-# Create .env only if it does not already exist; preserve existing keys.
 if (-not (Test-Path .env)) { Copy-Item .env.example .env }
 pnpm dev
 ```
 
-Open [Airday locally](http://127.0.0.1:5174/). Vite proxies `/api` to the Node server at `127.0.0.1:3001`. Both bind to loopback. The local API persists evidence under the ignored `.airday-local/` directory and processes queued refreshes in the background. It never substitutes fixture air readings.
+Open http://127.0.0.1:5174. Vite proxies `/api` to the local Node server on `127.0.0.1:3001`; both bind to loopback. Evidence is stored under the git-ignored `.airday-local/` folder. The first request may show **Retrieval queued**, and the UI checks again after five seconds.
 
-The first request can show **Retrieval queued**; the UI checks again after five seconds. Forecast and observation adapters run independently. An unavailable model can still leave observations visible. A failed refresh retains the earlier evidence and original timestamps.
+City search and forecasts work without any key. For live station readings, add `OPENAQ_API_KEY` to `.env` and restart. `pnpm preflight` reports which keys are present without printing them.
 
-City search and non-commercial forecasts work without a key. For station readings, save your OpenAQ key in the server-only `OPENAQ_API_KEY` setting in `.env`, then restart `pnpm dev`. Do not put keys in `VITE_` variables, source code, screenshots or chat. `pnpm preflight` reports presence without showing values.
+### Configuration
 
-## What works
+| Variable | Purpose |
+|---|---|
+| `OPENAQ_API_KEY`, `DATAGOV_API_KEY` | Optional station observations |
+| `OPEN_METEO_API_KEY` | Optional commercial forecast access |
+| `FIRMS_MAP_KEY` | Optional fire data (disabled by default) |
+| `ALERT_SIGNING_KEY` | Server-side signing key, at least 32 random characters |
+| `AIRDAY_MAX_ACTIVE_STATIONS` | Station capacity (default 20, pilot may use 40) |
+| `VITE_STATION_MAP_ENABLED` | Show or hide the OpenStreetMap station map |
+| `VITE_API_BASE_URL` | API Gateway URL for Amplify builds |
 
-- Indian city/town search and permission-based device location; no continuous tracking.
-- PM2.5/PM10 chart, exact hourly table, units, dates, regional grid description and attribution.
-- Separate nearby observations with station, distance, owner/provider, original measurement timestamp, averaging period and quality status when supplied.
-- Explicit pending, forecast-only, observation-only, old/missing data, unconfigured provider, unknown metadata and paused ingestion states.
-- Recurring activity editor, user review threshold, practical flexibility constraints and confirmation of an indoor option.
-- Same-duration lower-forecast alternatives within the user's permitted time range. These compare model values and do not establish safe conditions.
-- Reasoned decisions attached to the evidence shown when the editor opened; changed-evidence reminders, follow-through, JSON export and English/Hindi summary templates.
-- Optional Cognito workspaces: role-based plan edits, proposals, approvals, atomic audit records, optimistic versions and opt-in approval email delivery.
-- Shared persistence, refresh leases, global request budgets, retries, cooldowns, spatial observation indexing, prospective archives and resumable history reconciliation.
-- Operator controls, backup/restore and coverage/evaluation tools. See [OPERATIONS.md](OPERATIONS.md).
-
-Personal plans and decision history remain browser-local until explicitly submitted to a workspace. Quick activities remain local. Planning data is saved together in IndexedDB; location preference stays separate in localStorage. Saving failures show session-only status, retry and export options. Settings imports the versioned planning JSON with a preview and explicit merge/replace choice; conflicting history is rejected. Legacy bytes are preserved during migration. Browser data is origin-specific: use the same host and port, or export/import when switching between `localhost` and `127.0.0.1`. **Forget saved location** removes device coordinates from browser storage. Server demand retains a rounded 0.1° area for one day; exact GPS is not written into evidence records or passed to providers. Country checks for coordinates are bounding checks; city search uses the provider's `IN` country match.
-
-## Sources and data limits
-
-| Source                                                                                               | Integration                                                                   | Conditions                                                                                                                                                                                                        |
-| ---------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| [Open-Meteo Geocoding](https://open-meteo.com/en/docs/geocoding-api)                                 | `/v1/search`, country `IN`; GeoNames attribution                              | No key for non-commercial use; commercial customer endpoint supported.                                                                                                                                            |
-| [Open-Meteo / CAMS Global](https://open-meteo.com/en/docs/air-quality-api)                           | `/v1/air-quality`, `cams_global`, PM2.5/PM10, Asia/Kolkata, three days        | Regional model, roughly 45 km and 3-hour source steps; hourly concentrations are not official Indian AQI or school measurements. Retrieval time is known; model issue time is not supplied by this integration.   |
-| [OpenAQ v3](https://docs.openaq.org/api/operations/locations_get_v3_locations_get)                   | Locations with embedded sensors, location latest/flags, sensor hourly history | Key required. Verified concentration units, sensor IDs and periods are preserved; current Indian station coverage remains to be checked with the user's key.                                                      |
-| [CPCB / data.gov.in](https://www.data.gov.in/resource/real-time-air-quality-index-various-locations) | Resource `3b01bcb8-0b14-4abf-b6f2-c1bfd384ba69`; bounded pagination           | Optional key. **Numeric display is disabled until official units, statistic, period and timestamp semantics are reviewed in `api/config/cpcb-contract.json`.** A key alone does not make ambiguous values usable. |
-| [CAQM](https://caqm.nic.in/) / [Delhi Education](https://www.edudel.nic.in/)                         | Manually reviewed policy registry                                             | Empty by default, explicitly verification-needed. A published GRAP schedule is not an invoked order. Documents require scope, dates, source hash and review; checks expire after 24 hours.                        |
-
-OpenAQ's free limit is [60/minute and 2,000/hour](https://docs.openaq.org/using-the-api/rate-limits). Open-Meteo's hosted [non-commercial access terms](https://open-meteo.com/en/pricing) have quotas and no uptime guarantee. Internal budgets sit below these limits and include retries. Keys are not rotated to evade limits. Source licensing must be reviewed before redistributing archived OpenAQ data; automatic S3 observation archival is off by default.
-
-Provider disagreement is not resolved by averaging different readings. Comparison requires reviewed station identity, matching pollutant, units, statistic and period. Shared origin is explicitly labelled. Station searches are bounded and use a rounded area; a displayed station is selected from returned/indexed candidates, not a guarantee of the nearest monitor in the entire network.
-
-## Architecture
-
-See [ARCHITECTURE.md](ARCHITECTURE.md) and [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md).
-
-```mermaid
-flowchart LR
-  Browser[React planner] --> Hosting[Amplify Hosting]
-  Browser --> Edge[API Gateway + WAF]
-  Edge --> Read[Read / workspace Lambda]
-  Read --> DB[(DynamoDB evidence and workspaces)]
-  Read --> Queue[SQS refresh queue]
-  Tick[EventBridge Scheduler] --> Dispatch[Bounded dispatcher]
-  Dispatch --> Queue
-  Queue --> Worker[Ingestion Lambda]
-  Worker --> Providers[Open-Meteo / OpenAQ / reviewed CPCB]
-  Worker --> DB
-  Worker --> Archive[(Private S3 archive)]
-  Worker --> Secrets[Secrets Manager]
-  Read --> Auth[Cognito JWT verification]
-  Read --> EmailQueue[SQS approved notifications]
-  EmailQueue --> Delivery[Opt-in SES Lambda]
-```
-
-Default capacity is **20 active rounded areas and 20 OpenAQ stations**, one-hour forecast refresh and 15-minute monitor refresh, not unrestricted nationwide concurrency. Station, grid and quota caches are shared across workers. API demand within these bounds queues refresh work; reads never fetch air providers synchronously. Geocoding is a cached, bounded upstream call. SQS duplicates, provider errors and archive failures have separate handling.
+See [`.env.example`](.env.example) for the full list, including feature flags that start disabled.
 
 ## Checks
 
 ```powershell
-pnpm test
+pnpm test              # offline suite with labelled synthetic fixtures
 pnpm lint
 pnpm build
 pnpm build:api
 pnpm check:config
 pnpm check:infra
 pnpm check:security
-pnpm audit
 sam validate --lint --template-file template.yaml --region ap-south-1
 pnpm benchmark:local
 ```
 
-The offline suite uses labelled synthetic fixtures that production imports never reference. It covers data contracts, gaps, periods, dates, stale evidence, source/queue failures, leases, quotas, reconciliation, planning, roles, tenant isolation, audit/version conflicts and opt-in delivery. A passing dependency audit means no known advisories were reported, not that software has no vulnerabilities.
-
-Rendered browser automation was rejected by the saved permission setting in this workspace. Mobile rendering, keyboard interaction, screen-reader use and 200% zoom still require manual review. Cloud permissions, Cognito/SES integration and deployed load/restore checks require the AWS account. See [RELEASE_STATUS.md](RELEASE_STATUS.md) for measured results and open gates.
+The test suite covers data contracts, gaps, dates, stale evidence, source and queue failures, leases, quotas, reconciliation, planning, roles, tenant isolation, audit/version conflicts and opt-in delivery.
 
 ## Deploy to AWS
 
-Install AWS CLI v2 and SAM CLI. Sign in locally to an AWS CLI profile that can provision the services in `template.yaml`; no AWS passwords or access keys belong in this repository. Keep optional provider keys in `.env`; the deployment script installs them into Secrets Manager using a temporary file and removes it afterward. They are not CloudFormation parameters or build variables.
+Install AWS CLI v2 and SAM CLI and sign in to a profile that can provision the services in [`template.yaml`](template.yaml). No AWS credentials belong in this repository.
 
 ```powershell
-# Complete the appropriate AWS login flow for your account, then:
 .\scripts\deploy-aws.ps1 -Profile airday -Region ap-south-1
-# Optional monitoring email and verified SES sender:
+# optional monitoring email and verified SES sender:
 # .\scripts\deploy-aws.ps1 -Profile airday -AlertEmail <your-email> -NotificationSender <verified-sender>
 ```
 
-The script checks local release gates, creates/reuses Amplify, deploys SAM, uploads keys, builds and uploads the frontend with restrictive security headers, and verifies the URL, API contract and Delhi cache warmup. It saves resource outputs in ignored `.airday-deploy.json`. Never label a forecast-only deployment as live station coverage. The code is ready for these steps; **no AWS resources were provisioned during this implementation**.
+The script runs the local release gates, creates or reuses Amplify, deploys the SAM stack, moves provider keys from `.env` into Secrets Manager, builds and uploads the frontend with strict security headers, and verifies the URL, API contract and a Delhi cache warm-up. Outputs are saved to the git-ignored `.airday-deploy.json`.
 
-The plan's low-traffic cost envelope is approximately **$15–$35/month**, not a spending cap or current bill. WAF, monitoring, retention and traffic can affect charges. An optional account-wide $75 budget sends $20/$50/$75 notifications; alerts do not stop spending. The ingestion switch preserves cached reads. Review the account's actual pricing/credits and configure alerts before publishing.
+The estimated low-traffic cost is **about $15–$35/month**. That is an estimate, not a cap; an optional $75 account budget sends alerts at $20/$50/$75.
 
-## API surface
+## API
 
-Public: `GET /api/health`, `/api/config`, `/api/search?q=Delhi`, `/api/dashboard?lat=28.6139&lon=77.209&city=New%20Delhi&state=Delhi&date=YYYY-MM-DD`. Dates cover today and the next two days in IST. Device lookup adds `mode=coordinates`.
+| Access | Endpoints |
+|---|---|
+| Public | `GET /api/health`, `/api/config`, `/api/search?q=Delhi`, `/api/dashboard?lat=…&lon=…&city=…&state=…&date=YYYY-MM-DD` |
+| Signed in | `GET /api/workspace`, `PUT /api/workspace/plan`, `POST /api/workspace/decisions`, `POST /api/workspace/decisions/{id}/approve`, `PUT /api/workspace/decisions/{id}/follow-through`, `PUT /api/workspace/notifications` |
 
-Authenticated: `GET /api/workspace`, `PUT /api/workspace/plan`, `POST /api/workspace/decisions`, `POST /api/workspace/decisions/{id}/approve`, `PUT /api/workspace/decisions/{id}/follow-through`, `PUT /api/workspace/notifications`. Workspace identity comes from verified Cognito access tokens and server-owned membership, never a browser tenant ID.
+Dashboard dates cover today and the next two days in IST. Workspace identity comes from verified Cognito tokens and server-side membership, never from a browser-supplied tenant ID.
 
-The [demo script](DEMO.md) shows one real planning decision, evidence limitations and the actual AWS role in three minutes. Interviews, maintained local sensors, prospective accuracy validation and real operational ownership remain pilot work; they cannot be completed by scaffolding software or supplying more API keys.
+## Project structure
+
+```
+├── src/            React app: components, hooks, lib (planning, storage, i18n)
+├── api/            Handlers, ingestion engine, providers, workspaces, notifications
+│   └── config/     Policies, station mappings, CPCB contract
+├── scripts/        Build, deploy, preflight, security, benchmark and operator tools
+├── tests/          node:test suites with synthetic fixtures
+├── template.yaml   AWS SAM stack
+└── dev.mjs         Local API + Vite dev runner
+```
+
+## Status
+
+The local app, ingestion pipeline, optional workspaces and the AWS stack are implemented. The R0–R2 feature set is being verified locally before the first AWS deployment; R3 is paused and R4/R5 are deferred. Live station integration, Cognito sign-in, SES delivery and deployed load checks still need a real AWS account. The current acceptance ledger is [R0_R2_RELEASE_STATUS.md](R0_R2_RELEASE_STATUS.md), and [DEMO.md](DEMO.md) walks through a three-minute demo.
+
+This is a bounded pilot: national station coverage and measured forecast accuracy are not established.
+
+## Author
+
+**Dhruv** · [@dhruvsarohaa](https://github.com/dhruvsarohaa)
